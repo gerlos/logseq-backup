@@ -29,7 +29,7 @@ $ chmod +x ~/.local/bin/logseq-backup.sh
 
 ### Install systemd service and timer
 
-For automatic backups you need to install the required systemd unit files. To do so use the following command: 
+Automatic backups are done via systemd. To install the required systemd unit files: 
 
 ```bash
 $ logseq-backup.sh --install-unit-files
