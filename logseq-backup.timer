@@ -1,0 +1,16 @@
+# Timer per eseguire il backup di logseq ogni 12 ore
+# copia lo script logseq-backup.sh in ~/bin/ 
+# copia il logseq-backup.service e questo file in ~/.config/systemd/user/
+# abilita e avvia il servizio logseq-backup.service
+# abilita e avvia questo timer:
+# systemctl --user enable logseq-backup.timer
+# systemctl --user start logseq-backup.timer
+[Unit]
+Description=Timer per eseguire il backup delle note di Logseq ogni 12 ore
+
+[Timer]
+OnUnitActiveSec=12h
+Unit=logseq-backup.service
+
+[Install]
+WantedBy=default.target

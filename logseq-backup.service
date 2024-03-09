@@ -1,0 +1,17 @@
+# Servizio per eseguire un backup di logseq al login dell'utente
+# copia lo script logseq-backup.sh in ~/bin/ 
+# copia questo file in ~/.config/systemd/user/
+# abilita e avvia questo servizio: 
+# systemctl --user enable logseq-backup.service
+# systemctl --user start logseq-backup.service
+# Per eseguire questo script periodicamente, vedi anche logseq-backup.timer
+[Unit]
+Description=Backup delle note di Logseq
+After=graphical.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash %h/bin/logseq-backup.sh
+
+[Install]
+WantedBy=default.target
