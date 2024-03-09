@@ -7,7 +7,11 @@ Bash script to crate backup archives of [Logseq](https://logseq.com/) graphs, in
 
 This script is designed to create a compressed and optionally encrypted backup of a Logseq graph directory using 7zip, so you can safely store them also on removable or cloud storage. If a password is provided by the user, both file names and contents are encrypted with AES-256 encryption. 
 
+Options such as graph directory and backup paths can be given on the command line or, better, in the `~/.config/logseq-backup.conf` configuration file (use the `--create-conf` option to create a template config file to customise).
+
 Backup archives are named after current date and local hostname using this pattern, so you can tidily keep archives from multiple devices on the same location: `logseq-backup-YYYY-MM-DD_HH.MM.SS.hostname.7z` 
+
+If no changes from last backup are detected, it doesn't create any new backup archive. 
 
 The user can provide a maximum number of backups to keep, to automatically remove older backups. 
 
@@ -29,11 +33,28 @@ $ chmod +x logseq-backup.sh
 
 ### Install systemd service and timer
 
-TODO
+For automatic backups you need to install the required systemd unit files. To do so use the following command: 
+
+```bash
+$ logseq-backup.sh --install-unit-files
+```
+
+If not needed any more, you can uninstall them with: 
+
+```bash
+$ logseq-backup.sh --uninstall-unit-files
+```
 
 ## Usage
 
 TODO
+
+```bash
+$ logseq-backup.sh --help
+    --create-conf             Create a template config file in ~/.config/logseq-backup.conf
+    --install-unit-files      Setup unit files to automate backups
+    --uninstall-unit-files    Remove unit files and disable automatic backups
+```
 
 ## Examples
 
