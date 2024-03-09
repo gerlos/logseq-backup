@@ -38,6 +38,23 @@ state_file=~/.local/state/logseq-backup.check
 tag=logseq-backup
 #### ####
 
+## FUNCTIONS
+
+# Create template configuration file in ~/.config/logseq-backup.conf
+create-conf () {
+    echo
+}
+
+# Create and enable unit files to automate backups
+install-unit-files () {
+    echo
+}
+
+# Disable and remove unit files to automate backups
+install-unit-files () {
+    echo
+}
+
 # Leggi la configurazione personalizzata, se presente
 source $config_file > /dev/null
 

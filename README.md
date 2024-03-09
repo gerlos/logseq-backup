@@ -7,15 +7,11 @@ Bash script to crate backup archives of [Logseq](https://logseq.com/) graphs, in
 
 This script is designed to create a compressed and optionally encrypted backup of a Logseq graph directory using 7zip, so you can safely store them also on removable or cloud storage. If a password is provided by the user, both file names and contents are encrypted with AES-256 encryption. 
 
-Options such as graph directory and backup paths can be given on the command line or, better, in the `~/.config/logseq-backup.conf` configuration file (use the `--create-conf` option to create a template config file to customise).
-
-Backup archives are named after current date and local hostname using this pattern, so you can tidily keep archives from multiple devices on the same location: `logseq-backup-YYYY-MM-DD_HH.MM.SS.hostname.7z` 
-
-If no changes from last backup are detected, it doesn't create any new backup archive. 
-
-The user can provide a maximum number of backups to keep, to automatically remove older backups. 
-
-This script can create Systemd unit files to run backups periodically and every time the user logs in. 
+- Options such as graph directory and backup paths can be given on the command line or, better, in the `~/.config/logseq-backup.conf` configuration file (use the `--create-conf` option to create a template config file to customise).
+- Backup archives are named after current date and local hostname using this pattern, so you can tidily keep archives from multiple devices on the same location: `logseq-backup-YYYY-MM-DD_HH.MM.SS.hostname.7z` 
+- If no changes from last backup are detected, it doesn't create any new backup archive. 
+- The user can provide a maximum number of backups to keep, to automatically remove older backups. 
+- This script can create Systemd unit files to run backups periodically and every time the user logs in. 
 
 
 ## Requirements and Install
@@ -45,6 +41,7 @@ If not needed any more, you can uninstall them with:
 $ logseq-backup.sh --uninstall-unit-files
 ```
 
+
 ## Usage
 
 TODO
@@ -56,10 +53,14 @@ $ logseq-backup.sh --help
     --uninstall-unit-files    Remove unit files and disable automatic backups
 ```
 
+
 ## Examples
 
 TODO
 
+
 ## Motivation
 
-I love Logseq, and use Syncthng to sync my note graph between my devices. One day I got several sync conflicts between my desktop and laptop (it was my fault), and after spending too much time trying to resolve them, I decided I needed a way to take snapshot of my graph I can keep as a reference or as a quick restore point in case of disaster. I used [Joplin](https://joplinapp.org/) in the past, and liked the workflow of the [Backup plugin](https://github.com/JackGruber/joplin-plugin-backup), so I wrote this script, trying to replicate that workflow. 
+I love Logseq, and use Syncthng to sync my note graph between my devices. One day I got several sync conflicts between my desktop and laptop (it was my fault), and after spending too much time trying to resolve them, I decided I needed a way to take snapshot of my graph I can keep as a reference or as a quick restore point in case of disaster. 
+
+I used [Joplin](https://joplinapp.org/) in the past, and liked the workflow of the [Backup plugin](https://github.com/JackGruber/joplin-plugin-backup), so I wrote this script, trying to replicate that workflow. 
