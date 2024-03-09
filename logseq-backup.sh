@@ -1,5 +1,5 @@
 #!/bin/bash
-# logseq-backup: script to create compressed and encrypted
+# logseq-backup: script to create compressed and encrypted backups of logseq graph
 # archivi compressi e criptati con 7-zip
 # Richiede: pacchetto p7zip (Ubuntu, Debian) o p7zip* (Fedora)
 # Scrive sul log di sistema il risultato delle operazioni: 
@@ -9,26 +9,26 @@
 # note personali. 
 # Per usarlo con gli unit file per systemd, colloca questo script in ~/bin/
 
-#### CONFIGURAZIONE DI DEFAULT ####
+#### DEFAULT CONFIGURATION ####
 
-## IMPOSTAZIONI DI BASE ##
-# Directory delle note
+## BASIC PARAMETERS ##
+# Logseq graph dir to backup
 note_dir=
-# Directory di backup
+# Directory to save archives to 
 backup_dir=
-# Numero massimo di backup da mantenere
+# Maximum numer of backups to keep
 max_backups=8
-# Password per la crittografia: Se vuoto e siamo su una shell interattiva, 
-# chiede all'utente, altrimenti esce con errore
-# ATTENZIONE: se lutente digita una password vuota, il pacchetto NON viene criptato!
+# Encryption password. 
+# If empty and shell is interactive, asks to the user. Continue without password
+# WARNING: without any password the archive isn't encrypted
 password=
 
-## IMPOSTAZIONI AVANZATE ##
-# file di configurazione personalizzato
+## ADVANCED PARAMETERS ##
+# Custom configuration file path
 config_file=~/.config/logseq-backup.conf
-# Nome del file di backup
+# Custom backup archive file name
 backup_filename=logseq-backup-$(date +"%Y-%m-%d_%H.%M.%S").$(hostname).7z
-# Se impostato su YES crea un nuovo pacchetto SOLO se ci sono modifiche rispetto al
+# If YES crea un nuovo pacchetto SOLO se ci sono modifiche rispetto al
 # backup precedente
 only_on_change=YES
 # File di controllo dei dati dell'ultimo backup, utile per verificare se ci sono 
@@ -36,28 +36,28 @@ only_on_change=YES
 state_file=~/.local/state/logseq-backup.check
 # Identificativo per syslog
 tag=logseq-backup
-#### ####
+#### END OF DEFAULT CONFIGURATION ####
 
 ## FUNCTIONS
 # Write messages both to stdout and to system log
 send_message () {
-    logger -t $1 $2
-    echo $2
+    logger -t $tag $1
+    echo $1
 }
 
 # Create template configuration file in ~/.config/logseq-backup.conf
 create-conf () {
-    echo "create conf"
+    send_message "create conf"
 }
 
 # Create and enable unit files to automate backups
 install-unit-files () {
-    echo "install unit files"
+    send_message "install unit files"
 }
 
 # Disable and remove unit files to automate backups
 install-unit-files () {
-    echo "uninstall unit files"
+    send_message "uninstall unit files"
 }
 
 # Leggi la configurazione personalizzata, se presente
@@ -67,15 +67,13 @@ main () {
     #### Validazione delle opzioni ####
     # Se non c'è una password nella configurazione, e non è una shell interattiva, esci con errore
     if [[ -z "$password" ]] && ! [[ -t 0 ]]; then
-        echo "L'utente non ha fornito una password, non posso continuare!"
-        logger -t $tag "L'utente non ha fornito una password, non posso continuare!"
+        send_message "L'utente non ha fornito una password, non posso continuare!"
         exit 1
     fi
 
     # Se non è stata definito il percorso del grafo di logseq o il percorso di backup, esci con errore
     if [[ -z "$note_dir" ]] || [[ -z "$backup_dir" ]]; then
-        echo "L'utente non ha definito note_dir e/o backup_dir, non posso continuare!"
-        logger -t $tag "L'utente non ha definito note_dir e/o backup_dir, non posso continuare!"
+        send_message "L'utente non ha definito note_dir e/o backup_dir, non posso continuare!"
         exit 2
     fi
 
@@ -88,38 +86,31 @@ main () {
     # Verifica se i due checksum sono uguali: se sì, non è necessario proseguire a creare 
     # un nuovo pacchetto di backup
     if [[ "$status" == "$old_status" ]]; then
-        echo "Nessuna modifica rilevata: Backup non necessario."
-        logger -t $tag "Nessuna modifica rilevata: Backup non necessario."
+        send_message "Nessuna modifica rilevata: Backup non necessario."
         exit 0
     fi
 
     # Crea il pacchetto di backup
-    echo "Rilevate modifiche: Eseguo il backup delle note..."
-    logger -t $tag "Eseguo il backup di $note_dir su $backup_dir/$backup_filename ..."
+    send_message "Rilevate modifiche: Eseguo il backup delle note..."
     7z a -p${password} -mhe=on "$backup_dir/$backup_filename" "$note_dir"/
 
     # Verifica se la creazione del pacchetto ha avuto successo o meno
     if [[ $? -eq 0 ]]; then
-        echo "Backup completato."
-        logger -t $tag "Backup di $note_dir su $backup_dir/$backup_filename completato."
+        send_message "Backup di $note_dir su $backup_dir/$backup_filename completato."
     else 
-        echo "Backup fallito - impossibile creare il pacchetto"
-        logger -t $tag "Backup di $note_dir su $backup_dir/$backup_filename fallito - impossibile creare il pacchetto."
+        send_message "Backup di $note_dir su $backup_dir/$backup_filename fallito - impossibile creare il pacchetto."
         exit 3
     fi
 
     # Rimuovere i backup eccedenti
-    echo "Cerco backup eccedenti..."
-    logger -t $tag "Cerco backup eccedenti..."
+    send_message "Cerco backup eccedenti..."
     backup_count=$(ls -t "$backup_dir" | wc -l)
     if [ $backup_count -gt $max_backups ]; then
         excess_backups=$((backup_count - max_backups))
         ls -t "$backup_dir" | tail -n $excess_backups | xargs -I {} rm "$backup_dir"/{}
-        echo "$excess_backups backup eccedenti rimossi."
-        logger -t $tag "$excess_backups backup eccedenti rimossi."
+        send_message "$excess_backups backup eccedenti rimossi."
     else
-        echo "Nessun backup eccedente da rimuovere."
-        logger -t $tag "Nessun backup eccedente da rimuovere."
+        send_message "Nessun backup eccedente da rimuovere."
     fi
 
     # salva il checksum nel file di stato
