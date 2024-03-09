@@ -24,7 +24,7 @@ Then download, fork or copy and paste the script to your machine, put it in `~/.
 
 ```bash
 $ cp logseq-backup.sh ~/.local/bin/ 
-$ chmod +x logseq-backup.sh
+$ chmod +x ~/.local/bin/logseq-backup.sh
 ```
 
 ### Install systemd service and timer
