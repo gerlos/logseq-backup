@@ -65,7 +65,6 @@ write_file () {
 # Create template configuration file in $config_file path
 create-conf () {
     send_message "Creating configuration file $config_file"
-    # Create parent path if it doesn't exist
     config_template="#logseq-backup.sh template configuration file
 # You can create this template with the command logseq-backup.sh --create-conf
 # Please fill at least the required parameters 
