@@ -49,8 +49,8 @@ TODO
 ```bash
 $ logseq-backup.sh --help
 Usage: logseq-backup.sh [OPTION] 
-Create logseq graph backups. Use parameters from command line or 
-parameters from ~/.config/logseq-backup.conf config file
+Create logseq graph backups. Use parameters from command line or from config file 
+in ~/.config/logseq-backup.conf
     --note-dir=PATH             Logseq graph path
     --backup-dir=PATH           Backup dir path
     --password=PASSWORD         Encryption password

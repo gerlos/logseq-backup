@@ -161,6 +161,22 @@ uninstall_unit_files () {
     return 0
 }
 
+usage () {
+    echo "Usage: logseq-backup.sh [OPTION] 
+Create logseq graph backups. Use parameters from command line or from config file 
+in $config_file
+    --note-dir=PATH             Logseq graph path
+    --backup-dir=PATH           Backup dir path
+    --password=PASSWORD         Encryption password
+    --backup_filename=FILENAME  Backup archive file name 
+
+    --create-conf               Create a template config file in $config_file
+    --install-unit-files        Setup unit files to automate backups
+    --uninstall-unit-files      Remove unit files and disable automatic backups
+"
+    return 0
+}
+
 # Decide if a new backup is needed. First check user preference, then check 
 # timestamp checksum and compare with results from previous run, if available
 is_backup_needed () {
