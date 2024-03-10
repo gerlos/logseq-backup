@@ -31,12 +31,13 @@ backup_filename=logseq-backup-$(date +"%Y-%m-%d_%H.%M.%S").$(hostname).7z
 # If YES create a new backup only if it detects changes compared to previous backup
 # Otherwise, it always create a new backup
 only_on_change=YES
-# Custom configuration file path
-config_file=~/.config/logseq-backup.conf
 # checksum file from previous backup, used to detect changes
 state_file=~/.local/state/logseq-backup.check
 # System log tag. Use journalctl -t "$tag" to filter out messages from this script
 tag=logseq-backup
+
+# Custom configuration file path
+config_file=~/.config/logseq-backup.conf
 
 #### END OF DEFAULT CONFIGURATION ####
 
@@ -47,9 +48,19 @@ send_message () {
     echo $1
 }
 
+# Create a file with the specified contents. Create parent dir if doesn't exist
+write_file () {
+    send_message "Writing $1 file..."
+    echo -e $2 > $1
+}
+
 # Create template configuration file in ~/.config/logseq-backup.conf
 create-conf () {
     send_message "create conf"
+    # Create parent path if it doesn't exist
+    mkdir -p $(dirname "$config_file")
+    cat <<EOF > $config_file
+EOF
 }
 
 # Create and enable unit files to automate backups
