@@ -54,14 +54,31 @@ source $config_file 2> /dev/null
 
 #### FUNCTIONS ####
 
+# Print script usage
+function usage () {
+    echo "Usage: logseq-backup.sh [OPTION] 
+Create logseq graph backups. Use parameters from command line or from config file 
+in $config_file
+    --note-dir=PATH             Logseq graph path
+    --backup-dir=PATH           Backup dir path
+    --password=PASSWORD         Encryption password
+    --backup_filename=FILENAME  Backup archive file name 
+
+    --create-conf               Create a template config file in $config_file
+    --install-unit-files        Setup unit files to automate backups
+    --uninstall-unit-files      Remove unit files and disable automatic backups
+"
+    return 0
+}
+
 # Write messages both to stdout and system log
-send_message () {
+function send_message () {
     logger -t $tag $1
     echo $1
 }
 
 # Create a file with the specified contents. Parent dir needs to exist
-write_file () {
+function write_file () {
     if [[ -e $2 ]]; then
         send_message "ERROR: File $2 already exists. I won't overwrite your custom files"
         send_message "Please move it elsewhere and re-run the command to create it"
@@ -73,7 +90,7 @@ write_file () {
 }
 
 # Create template configuration file in $config_file path
-create_conf () {
+function create_conf () {
     send_message "Creating configuration file $config_file"
     config_template="#logseq-backup.sh template configuration file
 # You can create this template with the command logseq-backup.sh --create-conf
@@ -109,7 +126,7 @@ tag=$tag"
 }
 
 # Create and enable unit files to automate backups
-install_unit_files () {
+function install_unit_files () {
     send_message "Install and enable unit files"
     # create logseq-backup.service
     service_template="
@@ -149,7 +166,7 @@ WantedBy=default.target
 }
 
 # Disable and remove unit files to automate backups
-uninstall_unit_files () {
+function uninstall_unit_files () {
     send_message "Disable and uninstall unit files"
     # stop, disable and remove service and timer
     systemctl --user stop logseq-backup.timer
@@ -161,25 +178,9 @@ uninstall_unit_files () {
     return 0
 }
 
-usage () {
-    echo "Usage: logseq-backup.sh [OPTION] 
-Create logseq graph backups. Use parameters from command line or from config file 
-in $config_file
-    --note-dir=PATH             Logseq graph path
-    --backup-dir=PATH           Backup dir path
-    --password=PASSWORD         Encryption password
-    --backup_filename=FILENAME  Backup archive file name 
-
-    --create-conf               Create a template config file in $config_file
-    --install-unit-files        Setup unit files to automate backups
-    --uninstall-unit-files      Remove unit files and disable automatic backups
-"
-    return 0
-}
-
 # Decide if a new backup is needed. First check user preference, then check 
 # timestamp checksum and compare with results from previous run, if available
-is_backup_needed () {
+function is_backup_needed () {
     if [[ $only_on_change == "YES" ]]; then
         # Calculate checksum of timestamps of files in note directory
         status=($( find $note_dir -type f -printf '%T@,' | md5sum ))
@@ -208,7 +209,7 @@ is_backup_needed () {
 }
 
 # Validate options 
-validate_options () {
+function validate_options () {
     # We can't continue if note_dir and backup_dir are not defined
     if [[ -z "$note_dir" ]] || [[ -z "$backup_dir" ]]; then
         send_message "User did not provide note dir and/or backup dir, we can't continue!"
@@ -218,7 +219,7 @@ validate_options () {
     fi
 }
 
-main () {
+function main () {
     #### Processo effettivo ####
     if validate_options && is_backup_needed; then
         # Crea il pacchetto di backup
