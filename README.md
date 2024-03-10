@@ -48,9 +48,17 @@ TODO
 
 ```bash
 $ logseq-backup.sh --help
-    --create-conf             Create a template config file in ~/.config/logseq-backup.conf
-    --install-unit-files      Setup unit files to automate backups
-    --uninstall-unit-files    Remove unit files and disable automatic backups
+Usage: logseq-backup.sh [OPTION] 
+Create logseq graph backups. Use parameters from command line or 
+parameters from ~/.config/logseq-backup.conf config file
+    --note-dir=PATH             Logseq graph path
+    --backup-dir=PATH           Backup dir path
+    --password=PASSWORD         Encryption password
+    --backup_filename=FILENAME  Backup archive file name 
+
+    --create-conf               Create a template config file in ~/.config/logseq-backup.conf
+    --install-unit-files        Setup unit files to automate backups
+    --uninstall-unit-files      Remove unit files and disable automatic backups
 ```
 
 

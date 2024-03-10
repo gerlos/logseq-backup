@@ -193,26 +193,18 @@ is_backup_needed () {
 
 # Validate options 
 validate_options () {
-    # Se non c'è una password nella configurazione, e non è una shell interattiva, esci con errore
-    if [[ -z "$password" ]] && ! [[ -t 0 ]]; then
-        send_message "L'utente non ha fornito una password, non posso continuare!"
-        exit 1
-    fi
-
-    # Se non è stata definito il percorso del grafo di logseq o il percorso di backup, esci con errore
+    # We can't continue if note_dir and backup_dir are not defined
     if [[ -z "$note_dir" ]] || [[ -z "$backup_dir" ]]; then
-        send_message "L'utente non ha definito note_dir e/o backup_dir, non posso continuare!"
-        exit 2
+        send_message "User did not provide note dir and/or backup dir, we can't continue!"
+        return 2
+    else 
+        return 0
     fi
 }
 
 main () {
-    if validate_options; then
-        echo tutto ok, proseguiamo
-    fi
-
     #### Processo effettivo ####
-    if is_backup_needed; then
+    if validate_options && is_backup_needed; then
         # Crea il pacchetto di backup
         send_message "Rilevate modifiche: Eseguo il backup delle note..."
         7z a -p${password} -mhe=on "$backup_dir/$backup_filename" "$note_dir"/
@@ -236,9 +228,6 @@ main () {
             send_message "Nessun backup eccedente da rimuovere."
         fi
 
-        # salva il checksum nel file di stato
-        echo $status > $state_file
-
-    exit 0 
+    return 0 
     fi
 }
