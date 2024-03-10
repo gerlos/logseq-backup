@@ -9,7 +9,12 @@
 # note personali. 
 # Per usarlo con gli unit file per systemd, colloca questo script in ~/bin/
 
+# Custom configuration file path
+config_file=~/.config/logseq-backup.conf
+
 #### DEFAULT CONFIGURATION ####
+# Will be used if no configuration file exists
+# WARNING: Don't quote paths if you need tilde expansion (e.g. ~ to /home/username)
 
 ## REQUIRED PARAMETERS ##
 # Logseq graph dir to backup
@@ -36,9 +41,6 @@ state_file=~/.local/state/logseq-backup.check
 # System log tag. Use journalctl -t "$tag" to filter out messages from this script
 tag=logseq-backup
 
-# Custom configuration file path
-config_file=~/.config/logseq-backup.conf
-
 #### END OF DEFAULT CONFIGURATION ####
 
 ## FUNCTIONS
@@ -48,19 +50,52 @@ send_message () {
     echo $1
 }
 
-# Create a file with the specified contents. Create parent dir if doesn't exist
+# Create a file with the specified contents. Parent dir needs to exist
 write_file () {
-    send_message "Writing $1 file..."
-    echo -e $2 > $1
+    if [[ -e $2 ]]; then
+        send_message "ERROR: File $2 already exists. I won't overwrite your custom files"
+        send_message "Please move it elsewhere and re-run the command to create it"
+        # exit 5
+    else
+        send_message "Writing $2 file..."
+        echo -e "$1" > $2
+    fi
 }
 
-# Create template configuration file in ~/.config/logseq-backup.conf
+# Create template configuration file in $config_file path
 create-conf () {
-    send_message "create conf"
+    send_message "Creating configuration file $config_file"
     # Create parent path if it doesn't exist
-    mkdir -p $(dirname "$config_file")
-    cat <<EOF > $config_file
-EOF
+    config_template="#logseq-backup.sh template configuration file
+# You can create this template with the command logseq-backup.sh --create-conf
+# Please fill at least the required parameters 
+# WARNING: Don't quote paths if you need tilde expansion (e.g. ~ to /home/username)
+
+## REQUIRED PARAMETERS ##
+# Logseq graph dir to backup
+note_dir=
+# Directory to save archives to 
+backup_dir=
+
+## BASIC PARAMETERS ##
+# Encryption password. 
+# If empty and shell is interactive, asks to the user. Otherwise, continue without password
+# WARNING: without any password the archive isn't encrypted
+password=
+# Maximum numer of backups to keep
+max_backups=$max_backups
+
+## ADVANCED PARAMETERS ##
+# Custom backup archive file name
+backup_filename=$backup_filename
+# If YES create a new backup only if it detects changes compared to previous backup
+# Otherwise, it always create a new backup
+only_on_change=$only_on_change
+# checksum file from previous backup, used to detect changes
+state_file=$state_file
+# System log tag. Use journalctl -t "\$tag" to filter out messages from this script
+tag=$tag"
+    write_file "$config_template" $config_file 
 }
 
 # Create and enable unit files to automate backups
@@ -74,7 +109,7 @@ install-unit-files () {
 }
 
 # Leggi la configurazione personalizzata, se presente
-source $config_file > /dev/null
+source $config_file 2> /dev/null
 
 main () {
     #### Validazione delle opzioni ####
