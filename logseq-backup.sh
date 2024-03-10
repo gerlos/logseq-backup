@@ -1,13 +1,17 @@
 #!/bin/bash
 # logseq-backup: script to create compressed and encrypted backups of logseq graph
-# archivi compressi e criptati con 7-zip
-# Richiede: pacchetto p7zip (Ubuntu, Debian) o p7zip* (Fedora)
-# Scrive sul log di sistema il risultato delle operazioni: 
-# Usa journalctl -t "logseq-backup" per vedere questi record
-# Attenzione: 7-zip non salva proprietari, gruppi e permessi dei file! 
-# Questo non è un problema se usi questo script per fare il backup delle tue 
-# note personali. 
-# Per usarlo con gli unit file per systemd, colloca questo script in ~/bin/
+# backup archives are created using 7-zip and encrypted with AES256 encryption
+# AUTHOR: Gerlando Lo Savio
+# LICENSE: GNU General Public License 3.0
+# DATE: 2024-03-10
+# REQUIRES: p7zip ('sudo apt install p7zip*' on Ubuntu, Debian or
+# 'sudo dnf install p7zip*' on Fedora or 'brew install p7zip' on macOS)
+# Write its output on system log. Use 'journalctl -t "logseq-backup"' to see it
+
+# WARNING: 7-zip archives don't keep owner, groups and file permissions. This shouldn't 
+# be a problem if you backup your own notes. 
+ 
+# Please put this script in ~/.local/bin and make it executable if you want to run scheduled backups
 
 # Custom configuration file path
 config_file=~/.config/logseq-backup.conf
@@ -33,6 +37,8 @@ max_backups=8
 ## ADVANCED PARAMETERS ##
 # Custom backup archive file name
 backup_filename=logseq-backup-$(date +"%Y-%m-%d_%H.%M.%S").$(hostname).7z
+# How often should backups run?
+backup_interval=12h
 # If YES create a new backup only if it detects changes compared to previous backup
 # Otherwise, it always create a new backup
 only_on_change=YES
@@ -43,7 +49,8 @@ tag=logseq-backup
 
 #### END OF DEFAULT CONFIGURATION ####
 
-## FUNCTIONS
+#### FUNCTIONS ####
+
 # Write messages both to stdout and system log
 send_message () {
     logger -t $tag $1
@@ -99,12 +106,53 @@ tag=$tag"
 
 # Create and enable unit files to automate backups
 install-unit-files () {
-    send_message "install unit files"
+    send_message "Install and enable unit files"
+    # create logseq-backup.service
+    service_template="
+# Unit file to schedule Logseq backups. See ~/.local/bin/logseq-backup.sh
+[Unit]
+Description=BackLogseq notes backup. Run at every login
+After=graphical.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash %h/.local/bin/logseq-backup.sh
+
+[Install]
+WantedBy=default.target
+"
+    write_file "$service_template" ~/.config/systemd/user/logseq-backup.service
+    # create logse-backup.timer
+    timer_template="
+# Unit file to schedule Logseq backups. See ~/.local/bin/logseq-backup.sh
+[Unit]
+Description=Timer to run note backup every $backup_interval
+
+[Timer]
+OnUnitActiveSec=$backup_interval
+Unit=logseq-backup.service
+
+[Install]
+WantedBy=default.target
+"
+    write_file "$timer_template" ~/.config/systemd/user/logseq-backup.timer
+    # enable service and timer
+    systemctl --user enable logseq-backup.service
+    systemctl --user start logseq-backup.service 
+    systemctl --user enable logseq-backup.timer
+    systemctl --user start logseq-backup.timer
 }
 
 # Disable and remove unit files to automate backups
-install-unit-files () {
-    send_message "uninstall unit files"
+uninstall-unit-files () {
+    send_message "Disable and uninstall unit files"
+    # stop, disable and remove service and timer
+    systemctl --user stop logseq-backup.timer
+    systemctl --user stop logseq-backup.service
+    systemctl --user disable logseq-backup.timer
+    systemctl --user disable logseq-backup.service 
+    rm  ~/.config/systemd/user/logseq-backup.service
+    rm  ~/.config/systemd/user/logseq-backup.timer  
 }
 
 # Leggi la configurazione personalizzata, se presente
