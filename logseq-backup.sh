@@ -11,35 +11,37 @@
 
 #### DEFAULT CONFIGURATION ####
 
-## BASIC PARAMETERS ##
+## REQUIRED PARAMETERS ##
 # Logseq graph dir to backup
 note_dir=
 # Directory to save archives to 
 backup_dir=
-# Maximum numer of backups to keep
-max_backups=8
+
+## BASIC PARAMETERS ##
 # Encryption password. 
-# If empty and shell is interactive, asks to the user. Continue without password
+# If empty and shell is interactive, asks to the user. Otherwise, continue without password
 # WARNING: without any password the archive isn't encrypted
 password=
+# Maximum numer of backups to keep
+max_backups=8
 
 ## ADVANCED PARAMETERS ##
-# Custom configuration file path
-config_file=~/.config/logseq-backup.conf
 # Custom backup archive file name
 backup_filename=logseq-backup-$(date +"%Y-%m-%d_%H.%M.%S").$(hostname).7z
-# If YES crea un nuovo pacchetto SOLO se ci sono modifiche rispetto al
-# backup precedente
+# If YES create a new backup only if it detects changes compared to previous backup
+# Otherwise, it always create a new backup
 only_on_change=YES
-# File di controllo dei dati dell'ultimo backup, utile per verificare se ci sono 
-# modifiche rispetto al backup precedente
+# Custom configuration file path
+config_file=~/.config/logseq-backup.conf
+# checksum file from previous backup, used to detect changes
 state_file=~/.local/state/logseq-backup.check
-# Identificativo per syslog
+# System log tag. Use journalctl -t "$tag" to filter out messages from this script
 tag=logseq-backup
+
 #### END OF DEFAULT CONFIGURATION ####
 
 ## FUNCTIONS
-# Write messages both to stdout and to system log
+# Write messages both to stdout and system log
 send_message () {
     logger -t $tag $1
     echo $1
