@@ -11,10 +11,8 @@
 # WARNING: 7-zip archives don't keep owner, groups and file permissions. This shouldn't 
 # be a problem if you backup your own notes. 
  
-# Please put this script in ~/.local/bin and make it executable if you want to run scheduled backups
-
-# Custom configuration file path
-config_file=~/.config/logseq-backup.conf
+# Please put this script in ~/.local/bin and make it executable if you want to 
+#run scheduled backups
 
 #### DEFAULT CONFIGURATION ####
 # Will be used if no configuration file exists
@@ -49,6 +47,11 @@ tag=logseq-backup
 
 #### END OF DEFAULT CONFIGURATION ####
 
+# Custom configuration file path
+config_file=~/.config/logseq-backup.conf
+# Read custom configuration, if available
+source $config_file 2> /dev/null
+
 #### FUNCTIONS ####
 
 # Write messages both to stdout and system log
@@ -70,7 +73,7 @@ write_file () {
 }
 
 # Create template configuration file in $config_file path
-create-conf () {
+create_conf () {
     send_message "Creating configuration file $config_file"
     config_template="#logseq-backup.sh template configuration file
 # You can create this template with the command logseq-backup.sh --create-conf
@@ -102,10 +105,11 @@ state_file=$state_file
 # System log tag. Use journalctl -t "\$tag" to filter out messages from this script
 tag=$tag"
     write_file "$config_template" $config_file 
+    return 0
 }
 
 # Create and enable unit files to automate backups
-install-unit-files () {
+install_unit_files () {
     send_message "Install and enable unit files"
     # create logseq-backup.service
     service_template="
@@ -141,10 +145,11 @@ WantedBy=default.target
     systemctl --user start logseq-backup.service 
     systemctl --user enable logseq-backup.timer
     systemctl --user start logseq-backup.timer
+    return 0
 }
 
 # Disable and remove unit files to automate backups
-uninstall-unit-files () {
+uninstall_unit_files () {
     send_message "Disable and uninstall unit files"
     # stop, disable and remove service and timer
     systemctl --user stop logseq-backup.timer
@@ -152,14 +157,42 @@ uninstall-unit-files () {
     systemctl --user disable logseq-backup.timer
     systemctl --user disable logseq-backup.service 
     rm  ~/.config/systemd/user/logseq-backup.service
-    rm  ~/.config/systemd/user/logseq-backup.timer  
+    rm  ~/.config/systemd/user/logseq-backup.timer 
+    return 0
 }
 
-# Leggi la configurazione personalizzata, se presente
-source $config_file 2> /dev/null
+# Decide if a new backup is needed. First check user preference, then check 
+# timestamp checksum and compare with results from previous run, if available
+is_backup_needed () {
+    if [[ $only_on_change == "YES" ]]; then
+        # Calculate checksum of timestamps of files in note directory
+        status=($( find $note_dir -type f -printf '%T@,' | md5sum ))
+        # Retrieve last backup checksum, if available
+        if old_status=$(<$state_file); then
+            # If checksums match we don't need a new backup
+            if [[ "$status" == "$old_status" ]]; then
+                send_message "No change detected: backup unnecessary"
+                return 1
+            else
+                send_message "Changes detected: let's create a new backup"
+                # save current checksum in state file
+                echo $status > $state_file
+                return 0
+            fi
+        else 
+            send_message "No previous backup found, let's create first backup..."
+            # save current checksum in state file
+            echo $status > $state_file
+            return 0
+        fi
+    else
+        send_message "User required to always create a backup..."
+        return 0
+    fi
+}
 
-main () {
-    #### Validazione delle opzioni ####
+# Validate options 
+validate_options () {
     # Se non c'è una password nella configurazione, e non è una shell interattiva, esci con errore
     if [[ -z "$password" ]] && ! [[ -t 0 ]]; then
         send_message "L'utente non ha fornito una password, non posso continuare!"
@@ -171,45 +204,41 @@ main () {
         send_message "L'utente non ha definito note_dir e/o backup_dir, non posso continuare!"
         exit 2
     fi
+}
+
+main () {
+    if validate_options; then
+        echo tutto ok, proseguiamo
+    fi
 
     #### Processo effettivo ####
-    # Calcola il checksum dei timestamp dei file della directory delle note
-    status=($( find $note_dir -type f -printf '%T@,' | md5sum ))
-    # Recupera il checksum dell'ultimo backup dal file di controllo
-    old_status=$(<$state_file)
+    if is_backup_needed; then
+        # Crea il pacchetto di backup
+        send_message "Rilevate modifiche: Eseguo il backup delle note..."
+        7z a -p${password} -mhe=on "$backup_dir/$backup_filename" "$note_dir"/
 
-    # Verifica se i due checksum sono uguali: se sì, non è necessario proseguire a creare 
-    # un nuovo pacchetto di backup
-    if [[ "$status" == "$old_status" ]]; then
-        send_message "Nessuna modifica rilevata: Backup non necessario."
-        exit 0
-    fi
+        # Verifica se la creazione del pacchetto ha avuto successo o meno
+        if [[ $? -eq 0 ]]; then
+            send_message "Backup di $note_dir su $backup_dir/$backup_filename completato."
+        else 
+            send_message "Backup di $note_dir su $backup_dir/$backup_filename fallito - impossibile creare il pacchetto."
+            exit 3
+        fi
 
-    # Crea il pacchetto di backup
-    send_message "Rilevate modifiche: Eseguo il backup delle note..."
-    7z a -p${password} -mhe=on "$backup_dir/$backup_filename" "$note_dir"/
+        # Rimuovere i backup eccedenti
+        send_message "Cerco backup eccedenti..."
+        backup_count=$(ls -t "$backup_dir" | wc -l)
+        if [ $backup_count -gt $max_backups ]; then
+            excess_backups=$((backup_count - max_backups))
+            ls -t "$backup_dir" | tail -n $excess_backups | xargs -I {} rm "$backup_dir"/{}
+            send_message "$excess_backups backup eccedenti rimossi."
+        else
+            send_message "Nessun backup eccedente da rimuovere."
+        fi
 
-    # Verifica se la creazione del pacchetto ha avuto successo o meno
-    if [[ $? -eq 0 ]]; then
-        send_message "Backup di $note_dir su $backup_dir/$backup_filename completato."
-    else 
-        send_message "Backup di $note_dir su $backup_dir/$backup_filename fallito - impossibile creare il pacchetto."
-        exit 3
-    fi
-
-    # Rimuovere i backup eccedenti
-    send_message "Cerco backup eccedenti..."
-    backup_count=$(ls -t "$backup_dir" | wc -l)
-    if [ $backup_count -gt $max_backups ]; then
-        excess_backups=$((backup_count - max_backups))
-        ls -t "$backup_dir" | tail -n $excess_backups | xargs -I {} rm "$backup_dir"/{}
-        send_message "$excess_backups backup eccedenti rimossi."
-    else
-        send_message "Nessun backup eccedente da rimuovere."
-    fi
-
-    # salva il checksum nel file di stato
-    echo $status > $state_file
+        # salva il checksum nel file di stato
+        echo $status > $state_file
 
     exit 0 
+    fi
 }
