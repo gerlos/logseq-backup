@@ -32,13 +32,13 @@ $ chmod +x ~/.local/bin/logseq-backup.sh
 Automatic backups are done via systemd. To install the required systemd unit files: 
 
 ```bash
-$ logseq-backup.sh --install-unit-files
+$ logseq-backup.sh -i
 ```
 
 If not needed any more, you can uninstall them with: 
 
 ```bash
-$ logseq-backup.sh --uninstall-unit-files
+$ logseq-backup.sh -u
 ```
 
 
@@ -51,14 +51,16 @@ $ logseq-backup.sh --help
 Usage: logseq-backup.sh [OPTION] 
 Create logseq graph backups. Use parameters from command line or from config file 
 in ~/.config/logseq-backup.conf
-    --note-dir=PATH             Logseq graph path
-    --backup-dir=PATH           Backup dir path
-    --password=PASSWORD         Encryption password
-    --backup_filename=FILENAME  Backup archive file name 
+Command line parameters override config file ones
+    -n NOTEPATH     Logseq graph path directory
+    -b BACKUPPATH   Backup directory path
+    -p PASSWORD     Encryption password
+    -f FILENAME     Backup archive file name 
 
-    --create-conf               Create a template config file in ~/.config/logseq-backup.conf
-    --install-unit-files        Setup unit files to automate backups
-    --uninstall-unit-files      Remove unit files and disable automatic backups
+    -c     Create a template config file in ~/.config/logseq-backup.conf
+    -i     Setup systemd unit files to automate backups
+    -u     Remove systemd unit files and disable automatic backups
+    -h     Display this help
 ```
 
 

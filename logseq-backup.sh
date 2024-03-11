@@ -58,15 +58,17 @@ source $config_file 2> /dev/null
 function usage () {
     echo "Usage: logseq-backup.sh [OPTION] 
 Create logseq graph backups. Use parameters from command line or from config file 
-in $config_file
-    --note-dir=PATH             Logseq graph path
-    --backup-dir=PATH           Backup dir path
-    --password=PASSWORD         Encryption password
-    --backup_filename=FILENAME  Backup archive file name 
+in ~/.config/logseq-backup.conf
+Command line parameters override config file ones
+    -n NOTEPATH     Logseq graph path directory
+    -b BACKUPPATH   Backup directory path
+    -p PASSWORD     Encryption password
+    -f FILENAME     Backup archive file name 
 
-    --create-conf               Create a template config file in $config_file
-    --install-unit-files        Setup unit files to automate backups
-    --uninstall-unit-files      Remove unit files and disable automatic backups
+    -c     Create a template config file in ~/.config/logseq-backup.conf
+    -i     Setup systemd unit files to automate backups
+    -u     Remove systemd unit files and disable automatic backups
+    -h     Display this help
 "
     return 0
 }
@@ -81,11 +83,12 @@ function send_message () {
 function write_file () {
     if [[ -e $2 ]]; then
         send_message "ERROR: File $2 already exists. I won't overwrite your custom files"
-        send_message "Please move it elsewhere and re-run the command to create it"
-        # exit 5
+        send_message "Please move it and run the command again to create it"
+        return 1
     else
         send_message "Writing $2 file..."
         echo -e "$1" > $2
+        return 0
     fi
 }
 
@@ -121,8 +124,11 @@ only_on_change=$only_on_change
 state_file=$state_file
 # System log tag. Use journalctl -t "\$tag" to filter out messages from this script
 tag=$tag"
-    write_file "$config_template" $config_file 
-    return 0
+    if write_file "$config_template" $config_file ; then 
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Create and enable unit files to automate backups
@@ -142,7 +148,9 @@ ExecStart=/bin/bash %h/.local/bin/logseq-backup.sh
 [Install]
 WantedBy=default.target
 "
-    write_file "$service_template" ~/.config/systemd/user/logseq-backup.service
+    if ! write_file "$service_template" ~/.config/systemd/user/logseq-backup.service; then 
+        return 1
+    fi
     # create logse-backup.timer
     timer_template="
 # Unit file to schedule Logseq backups. See ~/.local/bin/logseq-backup.sh
@@ -156,7 +164,9 @@ Unit=logseq-backup.service
 [Install]
 WantedBy=default.target
 "
-    write_file "$timer_template" ~/.config/systemd/user/logseq-backup.timer
+    if ! write_file "$timer_template" ~/.config/systemd/user/logseq-backup.timer; then
+        return 1
+    fi
     # enable service and timer
     systemctl --user enable logseq-backup.service
     systemctl --user start logseq-backup.service 
@@ -219,32 +229,87 @@ function validate_options () {
     fi
 }
 
+# Actual processing
 function main () {
-    #### Processo effettivo ####
-    if validate_options && is_backup_needed; then
-        # Crea il pacchetto di backup
-        send_message "Rilevate modifiche: Eseguo il backup delle note..."
-        7z a -p${password} -mhe=on "$backup_dir/$backup_filename" "$note_dir"/
+    # Check if the conditions for a new backup are met 
+    if validate_options; then
+        if is_backup_needed; then
+            # Create backup archive
+            send_message "Changes detected: Creating a new backup archive..."
+            7z a -p${password} -mhe=on "$backup_dir/$backup_filename" "$note_dir"/
 
-        # Verifica se la creazione del pacchetto ha avuto successo o meno
-        if [[ $? -eq 0 ]]; then
-            send_message "Backup di $note_dir su $backup_dir/$backup_filename completato."
-        else 
-            send_message "Backup di $note_dir su $backup_dir/$backup_filename fallito - impossibile creare il pacchetto."
-            exit 3
-        fi
+            # Check if something went wrong creating backup archive
+            if [[ $? -eq 0 ]]; then
+                send_message "Backup of $note_dir in $backup_dir/$backup_filename completed."
+            else 
+                send_message "Backup of $note_dir in $backup_dir/$backup_filename failed - couldn't create the archive."
+                return 3
+            fi
 
-        # Rimuovere i backup eccedenti
-        send_message "Cerco backup eccedenti..."
-        backup_count=$(ls -t "$backup_dir" | wc -l)
-        if [ $backup_count -gt $max_backups ]; then
-            excess_backups=$((backup_count - max_backups))
-            ls -t "$backup_dir" | tail -n $excess_backups | xargs -I {} rm "$backup_dir"/{}
-            send_message "$excess_backups backup eccedenti rimossi."
+            # Remove excess archives
+            send_message "Looking form excess archives to remove..."
+            backup_count=$(ls -t "$backup_dir" | wc -l)
+            if [ $backup_count -gt $max_backups ]; then
+                excess_backups=$((backup_count - max_backups))
+                ls -t "$backup_dir" | tail -n $excess_backups | xargs -I {} rm "$backup_dir"/{}
+                send_message "$excess_backups excess backups removed."
+            else
+                send_message "No excess backups to remove."
+            fi
+            return 0 
         else
-            send_message "Nessun backup eccedente da rimuovere."
+            return 0
         fi
-
-    return 0 
+    else 
+        return 1
     fi
 }
+
+# Evaluate command line input - if no command line options are provided, use
+# options from configuration files of defaults from the top of the script
+while getopts 'n:b:p:f:ciuh' opt; do
+    case "$opt" in
+        n)
+            note_dir="$OPTARG"
+            ;;
+        b)
+            backup_dir="$OPTARG"
+            ;;
+        p)
+            password="$OPTARG"
+            ;;
+        f)
+            backup_filename="$OPTARG"
+            ;;
+        c)
+            # Create configuration template"
+            create_conf
+            exit 0
+            ;;
+        i)
+            # Install systemd unit files"
+            install_unit_files
+            exit 0
+            ;;
+        u)
+            # Uninstall systemd unit files"
+            uninstall_unit_files
+            exit 0
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        ?)
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if main; then
+    exit 0
+else
+    echo "Something went wrong..." >&2
+    exit 1
+fi
