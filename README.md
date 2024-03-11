@@ -66,8 +66,7 @@ Command line parameters override config file ones
 
 ### Example #1: everything on the command line
 
-Let's say that your notes are in `~/Documents/logseq` and you want to backup them
-to `~/Backup/notes/`, encrypting them with the password `foobar`:
+Let's say that your notes are in `~/Documents/logseq` and you want to backup them to `~/Backup/notes/`, encrypting them with the password `foobar`:
 
 ```shell
 $ ./logseq-backup.sh -n ~/Documents/logseq/ -b ~/Backup/notes/ -p foobar
@@ -129,16 +128,53 @@ Install systemd unit files to automate backups:
 $ logseq-backup.sh -i
 ```
 
-This way, at next login and 12 hours later you'll get a new package, if there are 
-changes in your Logseq graph. 
+This way, at next login and 12 hours later you'll get a new package, if there are changes in your Logseq graph. 
 
 
 ### Restoration example
 
-Backup are useless if you can't restore them. From time to time you should try to
-restore some of your backup archives to be sure everything went fine. 
+Backup are useless if you can't restore them. From time to time you should try to restore some of your backup archives to be sure everything went fine. 
 
-Luckily, on Logseq you can open a second (or third, ...) graph TODO
+Luckily, on Logseq you can open a second (or third, ...) graph alongside with your current one.
+
+First unpack your archive (you should also be able to unpack it from the file manager using `file-roller`):
+
+```shell
+$ 7z x logseq-backup-2024-03-05_09.58.49.carbon.7z 
+
+7-Zip [64] 16.02 : Copyright (c) 1999-2016 Igor Pavlov : 2016-05-21
+p7zip Version 16.02 (locale=it_IT.UTF-8,Utf16=on,HugeFiles=on,64 bits,12 CPUs Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz (906EA),ASM,AES-NI)
+
+Scanning the drive for archives:
+1 file, 5884202 bytes (5747 KiB)
+
+Extracting archive: logseq-backup-2024-03-05_09.58.49.carbon.7z
+
+Enter password (will not be echoed):
+--
+Path = logseq-backup-2024-03-05_09.58.49.carbon.7z
+Type = 7z
+Physical Size = 5884202
+Headers Size = 4458
+Method = LZMA2:23 7zAES
+Solid = +
+Blocks = 1
+
+Everything is Ok                                                  
+
+Folders: 38
+Files: 198
+Size:       6985507
+Compressed: 5884202
+```
+
+Then start Logseq, open left sidebar, click on `logseq` > `Add new graph` and point it to the directory you just restored: 
+
+![Add new graph menu](add-new-graph.png) 
+
+And check if everything is ok. You can switch on and off from your actual graph and restored graph using the same menu. 
+
+If you don't need it any more, you can safely remove it and unlink it visiting the `All graphs` page from the `logseq` menu. 
 
 
 ## Motivation
