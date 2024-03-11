@@ -107,7 +107,7 @@ note_dir=
 backup_dir=
 
 ## BASIC PARAMETERS ##
-# Encryption password. 
+# Encryption password
 # If empty and shell is interactive, asks to the user. Otherwise, continue without password
 # WARNING: without any password the archive isn't encrypted
 password=
@@ -195,7 +195,7 @@ function is_backup_needed () {
         # Calculate checksum of timestamps of files in note directory
         status=($( find $note_dir -type f -printf '%T@,' | md5sum ))
         # Retrieve last backup checksum, if available
-        if old_status=$(<$state_file); then
+        if old_status=$(<$state_file) 2>/dev/null ; then
             # If checksums match we don't need a new backup
             if [[ "$status" == "$old_status" ]]; then
                 send_message "No change detected: backup unnecessary"

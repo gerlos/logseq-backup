@@ -18,7 +18,7 @@ This script is designed to create a compressed and optionally encrypted backup o
 
 Requires `7z` binary to create archives. You can get it running `sudo apt install p7zip*` on Debian/Ubuntu, `sudo dnf install p7zip*` on Fedora or `brew install p7zip` on macOS. 
 
-To enable (optional) automatic backup you need a Systemd-based distro (sorry macOS!). 
+To enable (optional) automatic backup you need a Systemd-based distro (sorry macOS users!). 
 
 Then download, fork or copy and paste the script to your machine, put it in `~/.local/bin` or somewhere in your path and make it executable. 
 
@@ -44,8 +44,6 @@ $ logseq-backup.sh -u
 
 ## Usage
 
-TODO
-
 ```bash
 $ logseq-backup.sh --help
 Usage: logseq-backup.sh [OPTION] 
@@ -66,7 +64,81 @@ Command line parameters override config file ones
 
 ## Examples
 
-TODO
+### Example #1: everything on the command line
+
+Let's say that your notes are in `~/Documents/logseq` and you want to backup them
+to `~/Backup/notes/`, encrypting them with the password `foobar`:
+
+```shell
+$ ./logseq-backup.sh -n ~/Documents/logseq/ -b ~/Backup/notes/ -p foobar
+Changes detected: let's create a new backup
+Changes detected: Creating a new backup archive...
+
+7-Zip [64] 16.02 : Copyright (c) 1999-2016 Igor Pavlov : 2016-05-21
+p7zip Version 16.02 (locale=it_IT.UTF-8,Utf16=on,HugeFiles=on,64 bits,12 CPUs Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz (906EA),ASM,AES-NI)
+
+Scanning the drive:
+7 folders, 22 files, 28151425 bytes (27 MiB)
+
+Creating archive: /home/user/Backup/notes//logseq-backup-2024-03-11_19.27.23.carbon.7z
+
+Items to compress: 29
+
+                                                                              
+Files read from disk: 22
+Archive size: 20426585 bytes (20 MiB)
+Everything is Ok
+Backup of /home/user/Documents/logseq/ in /home/user/Backup/notes//logseq-backup-2024-03-11_19.27.23.carbon.7z completed.
+Looking form excess archives to remove...
+No excess backups to remove.
+```
+
+### Example #2: fully automated backup
+
+Let's say we want to automate previous backup, running it at every login and twice a day.
+
+First, put the script in your path:
+
+```shell
+$ mv logseq-backup.sh ~/.local/bin
+```
+
+Then create a template configuration file:
+
+```shell
+logseq-backup -c
+```
+
+Edit the configuration file in `~/.config/logseq-backup.conf` as needed. For example: 
+
+```
+# Logseq graph dir to backup
+note_dir=~/Documents/logseq
+# Directory to save archives to 
+backup_dir=~/Backup/notes/
+
+# Encryption password
+password=foobar
+# How often should backups run?
+backup_interval=12h
+```
+
+Install systemd unit files to automate backups:
+
+```shell
+$ logseq-backup.sh -i
+```
+
+This way, at next login and 12 hours later you'll get a new package, if there are 
+changes in your Logseq graph. 
+
+
+### Restoration example
+
+Backup are useless if you can't restore them. From time to time you should try to
+restore some of your backup archives to be sure everything went fine. 
+
+Luckily, on Logseq you can open a second (or third, ...) graph TODO
 
 
 ## Motivation
